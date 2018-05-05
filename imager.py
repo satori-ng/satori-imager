@@ -53,8 +53,7 @@ def file_worker(image, file_desc):
                     % (e, filename)
                 )
 
-
-def _clone(args, image):
+def _clone(args, image, source=os):
     entrypoints = []
     for entrypoint in args.entrypoints:
         if os.path.isdir(entrypoint):
@@ -67,7 +66,8 @@ def _clone(args, image):
         logger.error("[!] No valid Entrypoints Found!")
         logger.info("[!] Exiting...")
         sys.exit(-1)
-    crawler = BaseCrawler(entrypoints, args.excluded_dirs)
+
+    crawler = BaseCrawler(entrypoints, args.excluded_dirs, image=source)
     # dispatcher(image, file_queue)
     for i, extension in enumerate(args.load_extensions):
         try:
@@ -127,6 +127,12 @@ def _setup_argument_parser():
     )
 
     parser.add_argument(
+        '-r', '--remote',
+        help=("A connection string for remote connection"),
+    )
+
+
+    parser.add_argument(
         'entrypoints',
         help='Start iteration using these directories.',
         nargs='+',
@@ -145,5 +151,19 @@ if __name__ == '__main__':
     args = parser.parse_args()
     image = SatoriImage()
     EVENTS["imager.on_start"](parser=parser, args=args, satori_image=image)
-    _clone(args, image)
+    conn_context=None
+
+    if args.remote:
+        try:
+            import satoriremote
+        except ImportError:
+            print ("'--remote' parameter not available without 'satoriremote' package.")
+            sys.exit(1)
+        conn_context = satoriremote.connect(args.remote)
+        print (conn_context)
+        with conn_context as conn_src:
+            _clone(args, image, source=conn_src)
+
+    else: 
+        _clone(args, image, source=os)
     EVENTS["imager.on_end"]()
