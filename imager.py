@@ -26,13 +26,16 @@ from satoricore.extensions import *  # noqa
 PROCESSED_FILES = 0
 
 
-def file_worker(image, file_desc):
+def file_worker(image, file_desc, context=os):
     global PROCESSED_FILES
     PROCESSED_FILES += 1
     filename, filetype = file_desc
     image.add_file(filename)
     func = EVENTS["imager.pre_open"]
-    func(satori_image=image, file_path=filename, file_type=filetype)
+    func(
+            satori_image=image, file_path=filename,
+            file_type=filetype, os_context=context,
+        )
     if filetype is not SE.DIRECTORY_T:
         if len(EVENTS["imager.with_open"]):
             try:
@@ -45,7 +48,8 @@ def file_worker(image, file_desc):
                 fd.close()
                 func = EVENTS["imager.post_close"]
                 func(
-                    satori_image=image, file_path=filename, file_type=filetype
+                    satori_image=image, file_path=filename,
+                    file_type=filetype, os_context=context,
                 )
             except Exception as e:
                 logger.error(
@@ -53,7 +57,7 @@ def file_worker(image, file_desc):
                     % (e, filename)
                 )
 
-def _clone(args, image, source=os):
+def _clone(args, image, context=os):
     entrypoints = []
     for entrypoint in args.entrypoints:
         if os.path.isdir(entrypoint):
@@ -67,8 +71,9 @@ def _clone(args, image, source=os):
         logger.info("[!] Exiting...")
         sys.exit(-1)
 
-    crawler = BaseCrawler(entrypoints, args.excluded_dirs, image=source)
-    # dispatcher(image, file_queue)
+    crawler = BaseCrawler(entrypoints, args.excluded_dirs, image=context)
+
+    # extension_list = args.load_extensions
     for i, extension in enumerate(args.load_extensions):
         try:
             ext_module = imp.load_source(
@@ -83,8 +88,12 @@ def _clone(args, image, source=os):
                 )
             )
     pool = Pool(args.threads)
-    pool.starmap(  # image, filename, filetype
-        file_worker, zip(itertools.repeat(image), crawler())
+    pool.starmap(  # image, (filename, filetype), context
+        file_worker, zip(
+                itertools.repeat(image),
+                crawler(),
+                itertools.repeat(context)
+            )
     )
     pool.close()
     pool.join()
@@ -152,18 +161,19 @@ if __name__ == '__main__':
     image = SatoriImage()
     EVENTS["imager.on_start"](parser=parser, args=args, satori_image=image)
     conn_context=None
-
     if args.remote:
         try:
             import satoriremote
         except ImportError:
             print ("'--remote' parameter not available without 'satoriremote' package.")
             sys.exit(1)
-        conn_context = satoriremote.connect(args.remote)
-        print (conn_context)
-        with conn_context as conn_src:
-            _clone(args, image, source=conn_src)
+        conn_context, host = satoriremote.connect(args.remote)
+        logger.info("[+] Connected to {}".format(host))
+
+        with conn_context as context:
+            # globals()['hooker.os'] = conn_src
+            _clone(args, image, context=context)
 
     else: 
-        _clone(args, image, source=os)
+        _clone(args, image, context=os)
     EVENTS["imager.on_end"]()
