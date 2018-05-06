@@ -167,8 +167,12 @@ if __name__ == '__main__':
         except ImportError:
             print ("'--remote' parameter not available without 'satoriremote' package.")
             sys.exit(1)
-        conn_context, host = satoriremote.connect(args.remote)
-        logger.info("[+] Connected to {}".format(host))
+        conn_context, conn_dict = satoriremote.connect(args.remote)
+        logger.info(
+                        "[+] Connected to {}".format(
+                            conn_dict['host']
+                        )
+                    )
 
         with conn_context as context:
             # globals()['hooker.os'] = conn_src
