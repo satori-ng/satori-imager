@@ -3,7 +3,7 @@ from setuptools import setup
 
 
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __name__ = 'satoriimager'
 __desc__ = 'The System Imager of the Satori-Suite'
 __email__ = 'satori_ng@email.com'
@@ -20,7 +20,7 @@ setup(
     author="Satori-NG org",
     author_email=__email__,
 
-    modules = ['imager.py'],
+    py_modules=['imager'],
     entry_points={
         "console_scripts": [
             "satori-imager=imager:main",
