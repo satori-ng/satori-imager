@@ -130,8 +130,8 @@ def _setup_argument_parser():
 
     parser.add_argument(
         '-t', '--threads',
-        help=("Number of threads to use"),
-        default=4,
+        help=("Number of threads to use (might cause dead-locks)"),
+        default=1,
         type=int,
     )
 
@@ -155,7 +155,7 @@ def _setup_argument_parser():
     return parser
 
 
-if __name__ == '__main__':
+def main():
     parser = _setup_argument_parser()
     args = parser.parse_args()
     image = SatoriImage()
@@ -164,20 +164,24 @@ if __name__ == '__main__':
     if args.remote:
         try:
             import satoriremote
+            conn_context, conn_dict = satoriremote.connect(args.remote)
+            logger.info("[+] Connected to {}".format(
+                                conn_dict['host']
+                            )
+                        )
+            with conn_context as context:
+                _clone(args, image, context=context)
+
         except ImportError:
             print ("'--remote' parameter not available without 'satoriremote' package.")
             sys.exit(1)
-        conn_context, conn_dict = satoriremote.connect(args.remote)
-        logger.info(
-                        "[+] Connected to {}".format(
-                            conn_dict['host']
-                        )
-                    )
 
-        with conn_context as context:
-            # globals()['hooker.os'] = conn_src
-            _clone(args, image, context=context)
 
     else: 
         _clone(args, image, context=os)
     EVENTS["imager.on_end"]()
+
+
+
+if __name__ == '__main__':
+    main()
