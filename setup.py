@@ -16,10 +16,11 @@ setup(
     name=__name__,
     description=__desc__,
     version=__version__,
-    url=__url__
+    url=__url__,
     author="Satori-NG org",
     author_email=__email__,
 
+    modules = ['imager.py'],
     entry_points={
         "console_scripts": [
             "satori-imager=imager:main",
