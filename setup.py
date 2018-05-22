@@ -3,8 +3,8 @@ from setuptools import setup
 
 
 
-__version__ = '0.1.2'
-__name__ = 'satoriimager'
+__version__ = '0.1.1'
+__name__ = 'satori-imager'
 __desc__ = 'The System Imager of the Satori-Suite'
 __email__ = 'satori_ng@email.com'
 __url__ = 'https://github.com/satori-ng/'

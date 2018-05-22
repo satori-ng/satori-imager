@@ -1,2 +1,2 @@
-satoricore
+satori-core
 hooker
