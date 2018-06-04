@@ -9,12 +9,15 @@ from multiprocessing.dummy import Pool
 
 from hooker import EVENTS
 
+from satoricore.logger import logger, set_quiet_logger, set_debug_logger
+from satoricore.common import _STANDARD_EXT as SE
 from satoricore.crawler import BaseCrawler
 from satoricore.image import SatoriImage
-from satoricore.common import _STANDARD_EXT as SE
-from satoricore.logger import logger
+from satoricore.common import load_extension_list
+from satoricore.common import get_image_context_from_arg
 
 from satoricore.file.json import SatoriJsoner
+from satoricore.file.pickle import SatoriPickler
 
 EVENTS.append([
     "imager.on_start", "imager.pre_open", "imager.with_open",
@@ -52,8 +55,8 @@ def file_worker(image, file_desc, context=os):
                     file_type=filetype, os_context=context,
                 )
             except Exception as e:
-                logger.error(
-                    "[-] %s . File '%s' could not be opened."
+                logger.info(
+                    "%s . File '%s' could not be opened."
                     % (e, filename)
                 )
 
@@ -64,29 +67,17 @@ def _clone(args, image, context=os):
             entrypoints.append(entrypoint)
         else:
             logger.error(
-                "[-] Entrypoint '{}' is not a Directory".format(entrypoint)
+                "Entrypoint '{}' is not a Directory".format(entrypoint)
             )
     if not entrypoints:
-        logger.error("[!] No valid Entrypoints Found!")
-        logger.info("[!] Exiting...")
+        logger.critical("No valid Entrypoints Found!")
+        logger.critical("Exiting...")
         sys.exit(-1)
 
     crawler = BaseCrawler(entrypoints, args.excluded_dirs, image=context)
 
-    # extension_list = args.load_extensions
-    for i, extension in enumerate(args.load_extensions):
-        try:
-            ext_module = imp.load_source(
-                'extension_{}'.format(i),
-                extension
-                )
-            logger.info("Extension '{}' loaded".format(ext_module.__name__))
-        except Exception as e:
-            logger.warning(
-                "[-] [{}] - Extension {} could not be loaded".format(
-                    e, extension
-                )
-            )
+    load_extension_list(args.load_extensions)
+
     pool = Pool(args.threads)
     pool.starmap(  # image, (filename, filetype), context
         file_worker, zip(
@@ -98,11 +89,12 @@ def _clone(args, image, context=os):
     pool.close()
     pool.join()
 
-    logger.info("[*] Processed {} files".format(PROCESSED_FILES))
-    logger.info("[+] Image Generated!")
+    logger.info("Processed {} files".format(PROCESSED_FILES))
+    logger.info("Image Generated!")
     image_serializer = SatoriJsoner()
+    # image_serializer = SatoriPickler()
     image_serializer.write(image, args.image_file)
-    logger.info("[+] Stored to file '{}'".format(image_serializer.last_file))
+    logger.warn("Stored to file '{}'".format(image_serializer.last_file))
 
 
 def _setup_argument_parser():
@@ -158,29 +150,30 @@ def _setup_argument_parser():
 def main():
     parser = _setup_argument_parser()
     args = parser.parse_args()
+
+    if args.quiet:
+        set_quiet_logger()
+    
+
     image = SatoriImage()
     EVENTS["imager.on_start"](parser=parser, args=args, satori_image=image)
     conn_context=None
     if args.remote:
         try:
             import satoriremote
-            conn_context, conn_dict = satoriremote.connect(args.remote)
-            logger.info("[+] Connected to {}".format(
-                                conn_dict['host']
-                            )
-                        )
+
+            conn_context = get_image_context_from_arg(args.remote, allow_local=False)
             with conn_context as context:
                 _clone(args, image, context=context)
 
         except ImportError:
-            print ("'--remote' parameter not available without 'satoriremote' package.")
+            logger.critical("'--remote' parameter not available without 'satori-remote' package.")
             sys.exit(1)
 
 
     else: 
         _clone(args, image, context=os)
     EVENTS["imager.on_end"]()
-
 
 
 if __name__ == '__main__':
