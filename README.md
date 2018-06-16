@@ -124,6 +124,7 @@ json.data.filesystem["/"].contents.etc.contents.NetworkManager.contents.VPN.cont
 [...]
 ```
 [`gron` can make JSON greppable](https://github.com/tomnomnom/gron) 
+
 ----
 
 ### Going remote!
