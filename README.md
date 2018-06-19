@@ -7,6 +7,8 @@ The Imager part of the Satori-Suite
 
 
 The *Satori Imager* is the tool that creates *Satori Images* from hosts.
+###### Thing of it as a `find` on steroids, with Python Extensions, Remote Support and file storage.
+
 
 ### The entrypoint `satori-imager`
 
@@ -111,6 +113,7 @@ The `md5.py` extension uses the `with_open` hook, and forces the *Satori Imager*
 
 But the `/etc/shadow` cannot be opened and read by non-root users, hence the `Errno 13` warning...
 
+
 #### Check:
 ```sh
 $ satori-file etc_dir_simple.json.gz | gron | grep md5
@@ -144,3 +147,5 @@ Password:
 [!] Stored to file 'etc_dir_10_5_0_12.md5.json.gz'
 ```
 And the `etc_dir_10_5_0_12.md5.json.gz` contains data about the `/etc` of the remote machine. No agents installed, no puppies harmed.
+
+
