@@ -42,7 +42,7 @@ def file_worker(image, file_desc, context=os):
     if filetype is not SE.DIRECTORY_T:
         if len(EVENTS["imager.with_open"]):
             try:
-                fd = open(filename, 'rb')
+                fd = context.open(filename, 'rb')
                 func = EVENTS["imager.with_open"]
                 func(
                     satori_image=image, file_path=filename,
