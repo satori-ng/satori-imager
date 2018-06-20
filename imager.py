@@ -63,7 +63,7 @@ def file_worker(image, file_desc, context=os):
 def _clone(args, image, context=os):
     entrypoints = []
     for entrypoint in args.entrypoints:
-        if os.path.isdir(entrypoint):
+        if context.path.isdir(entrypoint):
             entrypoints.append(entrypoint)
         else:
             logger.error(
@@ -153,7 +153,7 @@ def main():
 
     if args.quiet:
         set_quiet_logger()
-    
+
 
     image = SatoriImage()
     EVENTS["imager.on_start"](parser=parser, args=args, satori_image=image)
@@ -171,7 +171,7 @@ def main():
             sys.exit(1)
 
 
-    else: 
+    else:
         _clone(args, image, context=os)
     EVENTS["imager.on_end"]()
 
